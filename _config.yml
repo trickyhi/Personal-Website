@@ -8,13 +8,13 @@ permalink:        pretty
 # Setup
 title:            Riley Marcoux
 tagline:          ''
-description:      'A brazen two-column <a href="http://jekyllrb.com" target="_blank">Jekyll</a> theme that pairs a prominent sidebar with uncomplicated content. Made by <a href="https://twitter.com/mdo" target="_blank">@mdo</a>.'
-url:              http://hyde.getpoole.com
+description:      'Unfiltered Opinions'
+url:              http://rmarcoux.com
 baseurl:          /
 
 author:
-  name:           'Mark Otto'
-  url:            https://twitter.com/mdo
+  name:           'Riley Marcoux'
+  url:            https://rmarcoux.com
 
 paginate:         5
 
