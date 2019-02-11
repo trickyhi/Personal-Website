@@ -12,10 +12,6 @@ description:      'Unfiltered Opinions'
 url:              http://rmarcoux.com
 baseurl:          /
 
-author:
-  name:           'Riley Marcoux'
-  url:            https://rmarcoux.com
-
 paginate:         5
 
 # Custom vars
