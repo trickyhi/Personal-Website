@@ -13,6 +13,4 @@ baseurl:          /
 
 paginate:         5
 
-# Custom vars
-version:          1.0
 
