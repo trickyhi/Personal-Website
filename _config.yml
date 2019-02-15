@@ -107,7 +107,7 @@ analytics:
 # Site Author
 author:
   name             : "Riley Marcoux"
-  avatar           : /assets/images/avatar.png # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
+  avatar           : /assets/images/MyHR.jpg # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
   bio              : "Computer enthusiast and photographer"
   location         : "London, Ontario"
   email            : "riley@rmarcoux.com"
