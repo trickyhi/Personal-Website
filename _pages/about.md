@@ -1,1 +1,1 @@
-comming soon
+about page
