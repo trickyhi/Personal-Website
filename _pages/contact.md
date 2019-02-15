@@ -2,4 +2,6 @@
 permalink: /contact/
 ---
 
-contact page
+# Contact Me
+
+Coming soon
