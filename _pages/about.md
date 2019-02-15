@@ -1,7 +1,6 @@
 ---
 permalink: /about/
 ---
-## About Me
-
+About Me
 
 coming soon
