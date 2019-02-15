@@ -279,6 +279,7 @@ compress_html:
   ignore:
     envs: development
 
+include: ["_pages"]
 
 # Defaults
 defaults:
@@ -293,3 +294,12 @@ defaults:
       comments: # true
       share: true
       related: true
+
+  # _pages
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: single
+      author_profile: true
+      
