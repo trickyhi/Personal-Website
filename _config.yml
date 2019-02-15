@@ -106,11 +106,11 @@ analytics:
 
 # Site Author
 author:
-  name             : "Your Name"
+  name             : "Riley Marcoux"
   avatar           : # path of avatar image, e.g. "/assets/images/bio-photo.jpg"
-  bio              : "I am an amazing person."
-  location         : "Somewhere"
-  email            :
+  bio              : "Computer enthusiast and photographer"
+  location         : "London, Ontario"
+  email            : "riley@rmarcoux.com"
   links:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"
