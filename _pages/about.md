@@ -2,4 +2,3 @@
 permalink: /about/
 ---
 
-# About Me
