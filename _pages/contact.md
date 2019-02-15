@@ -1,7 +1,6 @@
 ---
 permalink: /contact/
 ---
-
-# Contact Me
+Contact Me
 
 Coming soon
