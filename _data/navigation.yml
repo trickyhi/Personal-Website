@@ -4,6 +4,8 @@ main:
     url: /about
   - title: "Contact"
     url: /contact
+  - title: "HomeLab"
+    url: http://ddns.rmarcoux.com
   # - title: "Sample Posts"
   #   url: /year-archive/
   # - title: "Sample Collections"
