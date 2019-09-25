@@ -10,6 +10,14 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="assets/css/main.css" />
+
+		<script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>
+		<script type='text/javascript' src='unitegallery/js/unitegallery.min.js'></script> 
+		
+		<link rel='stylesheet' href='unitegallery/css/unite-gallery.css' type='text/css' /> 
+		<script type='text/javascript' src='unitegallery/themes/default/ug-theme-default.js'></script> 
+		<link rel='stylesheet' href='unitegallery/themes/default/ug-theme-default.css' type='text/css' /> 
+
 	</head>
 	<body>
 		<div class="page-wrap">
@@ -44,41 +52,16 @@
 										</header>
 
 										<div class="content">
-											<div class="media all people">
-												<a href="images/fulls/01.jpg"><img src="images/thumbs/01.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all place">
-												<a href="images/fulls/05.jpg"><img src="images/thumbs/05.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all thing">
-												<a href="images/fulls/09.jpg"><img src="images/thumbs/09.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all people">
-												<a href="images/fulls/02.jpg"><img src="images/thumbs/02.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all place">
-												<a href="images/fulls/06.jpg"><img src="images/thumbs/06.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all thing">
-												<a href="images/fulls/10.jpg"><img src="images/thumbs/10.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all people">
-												<a href="images/fulls/03.jpg"><img src="images/thumbs/03.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all place">
-												<a href="images/fulls/07.jpg"><img src="images/thumbs/07.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all thing">
-												<a href="images/fulls/11.jpg"><img src="images/thumbs/11.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all people">
-												<a href="images/fulls/04.jpg"><img src="images/thumbs/04.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all place">
-												<a href="images/fulls/08.jpg"><img src="images/thumbs/08.jpg" alt="" title="This right here is a caption." /></a>
-											</div>
-											<div class="media all thing">
-												<a href="images/fulls/12.jpg"><img src="images/thumbs/12.jpg" alt="" title="This right here is a caption." /></a>
+											<div id="gallery" style="display:none;">
+		
+												<img alt="Image 1 Title" src="thumbs/image1.jpg"
+													data-image="images/image1.jpg"
+													data-description="Image 1 Description">
+												
+												<img alt="Image 2 Title" src="thumbs/image2.jpg"
+													data-image="images/image02.jpg"
+													data-description="Image 2 Description">
+											
 											</div>
 										</div>
 								</div>
@@ -100,6 +83,14 @@
 		<script src="assets/js/skel.min.js"></script>
 		<script src="assets/js/util.js"></script>
 		<script src="assets/js/main.js"></script>
+
+		<script type="text/javascript"> 
+			
+			jQuery(document).ready(function(){ 
+				jQuery("#gallery").unitegallery(); 
+			}); 
+		
+		</script>
 
 </body>
 </html>
