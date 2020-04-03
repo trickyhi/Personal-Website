@@ -50,10 +50,10 @@
 
         function checkServer() {
             var p = new Ping();
-            var server = 127.0.0.1; //Try to get it automagically, but you can manually specify this
+            var server = ddns.rmarcoux.com; //Try to get it automagically, but you can manually specify this
             var timeout = 2000; //Milliseconds
             var body = document.getElementsByTagName("body")[0];
-            p.ping(server+":32400", function(data) {
+            p.ping(server, function(data) {
                 var serverMsg = document.getElementById( "server-status-msg" );
                 var serverImg = document.getElementById( "server-status-img" );
                 if (data < 1000){
