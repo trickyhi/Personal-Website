@@ -1,29 +1,37 @@
 /*
-	Lens by HTML5 UP
+	Dimension by HTML5 UP
 	html5up.net | @ajlkn
 	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
 */
 
-/* Main */
+/* BG */
 
-	#main {
-		opacity: 1 !important;
-		right: 0 !important;
+	body.is-preload #bg:before {
+		background-color: transparent;
 	}
 
-	body:before {
-		content: 'Javascript is disabled :(';
-		display: block;
-		position: absolute;
-		top: 50%;
-		width: calc(100% - 22.5em * 0.333333333);
-		height: 4em;
-		margin-top: -2em;
-		color: #282828;
-		cursor: default;
-		font-size: 3em;
-		line-height: 4em;
-		text-align: center;
-		white-space: nowrap;
-		left: 0;
+/* Header */
+
+	body.is-preload #header {
+		-moz-filter: none;
+		-webkit-filter: none;
+		-ms-filter: none;
+		filter: none;
+	}
+
+		body.is-preload #header > * {
+			opacity: 1;
+		}
+
+		body.is-preload #header .content .inner {
+			max-height: none;
+			padding: 3rem 2rem;
+			opacity: 1;
+		}
+
+/* Main */
+
+	#main article {
+		opacity: 1;
+		margin: 4rem 0 0 0;
 	}
