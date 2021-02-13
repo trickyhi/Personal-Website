@@ -1,0 +1,21 @@
+# Base configs
+baseurl: "https://rmarcoux.com"
+image_fulls_loc: "/images/fulls"
+image_thumbs_loc: "/images/thumbs"
+google_analytics: "UA-28340273-3"
+
+# UI configs
+title: "Riley Marcoux"
+subtitle: "Photographer in London, Ontario"
+author: "Riley Marcoux"
+header:
+ title: "Photography"
+ subtitle: "by Riley Marcoux"
+footer:
+ name: "Hi, my name is Riley Marcoux"
+ bio: "I'm Riley, an IT Professional and Photographer<br> from London, Ontario<br></h2>"
+ web_design: "AJ"
+social_urls:
+  twitter: "https://www.twitter.com/rileymarcoux"
+  instagram: "https://www.instagram.com/rileymarcoux"
+  linkedin: "https://in.linkedin.com/in/rileymarcoux"
