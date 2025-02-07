@@ -17,8 +17,8 @@ layout: default
 
     <!-- Main -->
     <div id="main" data-exif='{{ site.exif }}'>
-        {% assign shuffled_images = site.static_files | where: "path", "contains", "fulls" | sample: site.static_files.size %}
-        {% for image in shuffled_images %}
+        {% for image in site.static_files %}
+        {% if image.path contains 'fulls' %}
         <article class="thumb">
             <a href="{{ site.baseurl }}{{ site.image_fulls_loc }}/{{ image.name }}" class="image">
                 <img src="{{ site.baseurl }}{{ site.image_thumbs_loc }}/{{ image.name }}" alt=""
@@ -26,6 +26,7 @@ layout: default
             <!--<h2></h2>
             <p></p>-->
         </article>
+        {% endif %}
         {% endfor %}
     </div>
 
