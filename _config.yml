@@ -26,5 +26,5 @@ social_urls:
 collections:
   galleries:
     output: true
-    path: gallery
+    path: Gallery
     permalink: /gallery/:name/
