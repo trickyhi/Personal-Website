@@ -21,3 +21,10 @@ social_urls:
   instagram: "https://www.instagram.com/ram_patra"
   facebook: "https://www.facebook.com/marcouxphotography"
   flickr: "https://www.flickr.com/photos/197429934@N07"
+
+# Gallery Collections
+collections:
+  galleries:
+    output: true
+    path: Gallery
+    permalink: /gallery/:name/
