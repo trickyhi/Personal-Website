@@ -46,8 +46,9 @@ This turns full-resolution photos into compressed, web-ready galleries at
      exposure compensation, flash) from each photo's EXIF data and saves it to
      that event's `manifest.json`, so it can be shown in the on-site lightbox
    - **deletes the `_originals/<category>/<event>/` folder** once that event has
-     built successfully (and the category folder too, once every event inside it
-     is built) — this repo is not where your originals live long-term
+     built successfully — this repo is not where your originals live long-term.
+     The category folder itself (e.g. `_originals/Cars/`) is left in place even
+     once empty, ready for the next event.
 
    It then (re)generates every event page, every category page, and the
    top-level `galleries/index.html` listing, from whatever is currently in

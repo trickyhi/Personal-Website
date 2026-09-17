@@ -372,12 +372,8 @@ async function main() {
         console.error(`  failed to build "${categorySlug}/${eventSlug}", leaving its originals in place:`, err.message);
       }
     }
-
-    // Tidy up a category folder in _originals/ once every event inside it is built.
-    const categoryDir = path.join(ORIGINALS_DIR, categorySlug);
-    if (fs.existsSync(categoryDir) && fs.readdirSync(categoryDir).length === 0) {
-      fs.rmSync(categoryDir, { recursive: true, force: true });
-    }
+    // The category folder itself (e.g. _originals/Cars/) is left in place even
+    // once empty, so it stays ready as a drop-box for the next event.
   }
 
   // galleries/ is the durable source of truth once originals are deleted, so
