@@ -1,0 +1,32 @@
+[
+  {
+    "file": "DSC05907-Enhanced-NR.webp",
+    "width": 1333,
+    "height": 2000,
+    "exif": {
+      "date": "November 16, 2024",
+      "device": "SONY ILCE-6700",
+      "focalLength": "31.8 mm",
+      "aperture": "f/2.8",
+      "exposureTime": "1/320 sec",
+      "iso": "ISO 16000",
+      "exposureBias": "EXP 0",
+      "flash": "No flash, compulsory"
+    }
+  },
+  {
+    "file": "DSC06938-Enhanced-NR.webp",
+    "width": 1333,
+    "height": 2000,
+    "exif": {
+      "date": "November 16, 2024",
+      "device": "SONY ILCE-6700",
+      "focalLength": "32.5 mm",
+      "aperture": "f/2.8",
+      "exposureTime": "1/500 sec",
+      "iso": "ISO 20000",
+      "exposureBias": "EXP 0",
+      "flash": "No flash, compulsory"
+    }
+  }
+]
