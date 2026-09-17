@@ -43,8 +43,13 @@ This turns full-resolution photos into compressed, web-ready galleries at
      2000px on the long edge, plus a small thumbnail for the grid), writing them
      to `galleries/<category>/<event>/full/` and `.../thumbs/`
    - reads camera/shot info (model, focal length, aperture, shutter speed, ISO,
-     exposure compensation, flash) from each photo's EXIF data and saves it to
-     that event's `manifest.json`, so it can be shown in the on-site lightbox
+     exposure compensation, flash, date taken) from each photo's EXIF data and
+     saves it to that event's `manifest.json`, so it can be shown in the
+     on-site lightbox
+   - sets that event's `date` in `gallery.json` to the earliest date-taken found
+     across its photos (used to sort events and shown as "Month Year" on
+     listing pages) — but only if `date` isn't already set, so a manual edit
+     always wins
    - **deletes the `_originals/<category>/<event>/` folder** once that event has
      built successfully — this repo is not where your originals live long-term.
      The category folder itself (e.g. `_originals/Cars/`) is left in place even
@@ -55,11 +60,12 @@ This turns full-resolution photos into compressed, web-ready galleries at
    `galleries/` (not just what was built this run).
 
 4. (Optional) Open `galleries/<category>/<event>/gallery.json` and set a nicer
-   `title` and a `date` (e.g. `"2026-05-01"`) — events within a category are
-   sorted newest-first by this date. There's also `galleries/<category>/category.json`
-   for the category's display `title`. Re-run the build script afterward to
-   regenerate the pages with your change (it preserves your edits, and doesn't
-   need `_originals/` to still exist to do this).
+   `title`, or override the auto-detected `date` (format `"YYYY-MM-DD"`) if it
+   picked the wrong day or none of your photos had EXIF dates. There's also
+   `galleries/<category>/category.json` for the category's display `title`.
+   Re-run the build script afterward to regenerate the pages with your change
+   (it preserves your edits, and doesn't need `_originals/` to still exist to
+   do this).
 
 5. Commit `galleries/<category>/` and push. `_originals/` is gitignored, so
    nothing from there ever gets committed.

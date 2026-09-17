@@ -49,6 +49,45 @@ function sortByDateThenTitle(a, b) {
   return a.title.localeCompare(b.title);
 }
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+function toValidDate(value) {
+  return value instanceof Date && !isNaN(value.getTime()) ? value : null;
+}
+
+// Local-time getters (not UTC) so the calendar date matches what the camera
+// recorded, regardless of how exifr represents it internally.
+function toISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function formatPhotoDate(date) {
+  return `${MONTH_NAMES[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
+// Parses the "YYYY-MM-DD" (or "YYYY-MM") strings this script writes to
+// gallery.json. Falls back to showing whatever was typed if it doesn't match
+// (e.g. someone hand-edited it into a different format).
+function formatFullDate(dateStr) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr || '');
+  if (!match) return dateStr;
+  const monthIndex = parseInt(match[2], 10) - 1;
+  if (monthIndex < 0 || monthIndex > 11) return dateStr;
+  return `${MONTH_NAMES[monthIndex]} ${parseInt(match[3], 10)}, ${match[1]}`;
+}
+
+function formatMonthYear(dateStr) {
+  const match = /^(\d{4})-(\d{2})/.exec(dateStr || '');
+  if (!match) return dateStr;
+  const monthIndex = parseInt(match[2], 10) - 1;
+  if (monthIndex < 0 || monthIndex > 11) return dateStr;
+  return `${MONTH_NAMES[monthIndex]} ${match[1]}`;
+}
+
 function formatDevice(make, model) {
   if (!make && !model) return null;
   if (!make) return model;
@@ -114,14 +153,18 @@ async function readExifSummary(srcPath) {
       tiff: false,
       exif: true,
       translateValues: false,
-      pick: ['Make', 'Model', 'FNumber', 'ExposureTime', 'ISO', 'FocalLength', 'ExposureCompensation', 'Flash'],
+      pick: ['Make', 'Model', 'FNumber', 'ExposureTime', 'ISO', 'FocalLength', 'ExposureCompensation', 'Flash',
+        'DateTimeOriginal', 'CreateDate'],
     });
   } catch (e) {
     raw = null;
   }
-  if (!raw) return null;
+  if (!raw) return { summary: null, capturedAt: null };
+
+  const capturedAt = toValidDate(raw.DateTimeOriginal) || toValidDate(raw.CreateDate);
 
   const summary = {
+    date: capturedAt ? formatPhotoDate(capturedAt) : null,
     device: formatDevice(raw.Make, raw.Model),
     focalLength: raw.FocalLength != null ? formatFocalLength(raw.FocalLength) : null,
     aperture: raw.FNumber != null ? formatAperture(raw.FNumber) : null,
@@ -132,7 +175,7 @@ async function readExifSummary(srcPath) {
   };
 
   const hasAnyValue = Object.values(summary).some((v) => v != null);
-  return hasAnyValue ? summary : null;
+  return { summary: hasAnyValue ? summary : null, capturedAt };
 }
 
 async function processEvent(categorySlug, eventSlug) {
@@ -145,6 +188,7 @@ async function processEvent(categorySlug, eventSlug) {
 
   const files = fs.readdirSync(srcDir).filter((f) => IMAGE_EXT.test(f)).sort();
   const manifest = [];
+  let earliestCapture = null;
 
   for (const file of files) {
     const base = file.replace(IMAGE_EXT, '');
@@ -166,8 +210,11 @@ async function processEvent(categorySlug, eventSlug) {
       .toFile(thumbPath);
 
     const { width, height } = await sharp(fullPath).metadata();
-    const exif = await readExifSummary(srcPath);
+    const { summary: exif, capturedAt } = await readExifSummary(srcPath);
     manifest.push({ file: outName, width, height, exif });
+    if (capturedAt && (!earliestCapture || capturedAt < earliestCapture)) {
+      earliestCapture = capturedAt;
+    }
 
     console.log(`  ${file} -> ${outName}`);
   }
@@ -182,6 +229,11 @@ async function processEvent(categorySlug, eventSlug) {
     } catch (e) {
       console.warn(`  warning: could not parse existing ${metaPath}, using defaults`);
     }
+  }
+  // Only fill in a date from EXIF if one hasn't already been set (by hand or
+  // by an earlier run) — a manual edit always wins on later rebuilds.
+  if (!galleryMeta.date && earliestCapture) {
+    galleryMeta.date = toISODate(earliestCapture);
   }
   fs.writeFileSync(metaPath, JSON.stringify(galleryMeta, null, 2));
 }
@@ -246,7 +298,7 @@ function renderEventPage(category, event) {
     <a href="../">${escapeHtml(category.title)}</a>
   </div>
   <h1>${escapeHtml(event.title)}</h1>
-  ${event.date ? `<p class="gallery-date">${escapeHtml(event.date)}</p>` : ''}
+  ${event.date ? `<p class="gallery-date">${escapeHtml(formatFullDate(event.date))}</p>` : ''}
 </header>
 <main class="gallery-grid">
 ${items}
@@ -285,7 +337,7 @@ function renderCategoryPage(category) {
         </div>
         <div class="gallery-card-body">
           <p class="gallery-card-title">${escapeHtml(event.title)}</p>
-          <p class="gallery-card-meta">${event.date ? `${escapeHtml(event.date)} · ` : ''}${event.count} photo${event.count === 1 ? '' : 's'}</p>
+          <p class="gallery-card-meta">${event.date ? `${escapeHtml(formatMonthYear(event.date))} · ` : ''}${event.count} photo${event.count === 1 ? '' : 's'}</p>
         </div>
       </a>`);
 

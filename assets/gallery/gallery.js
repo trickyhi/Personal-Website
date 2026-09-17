@@ -29,7 +29,7 @@
     if (!infoPanel) return;
     const exif = exifData[index];
     const settings = exif
-      ? [exif.focalLength, exif.aperture, exif.exposureTime, exif.iso, exif.exposureBias, exif.flash].filter(Boolean)
+      ? [exif.date, exif.focalLength, exif.aperture, exif.exposureTime, exif.iso, exif.exposureBias, exif.flash].filter(Boolean)
       : [];
 
     if (!exif || (!exif.device && settings.length === 0)) {
