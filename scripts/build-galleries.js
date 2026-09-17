@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Builds compressed web galleries from raw photos dropped into _originals/<slug>/.
+// Builds compressed web galleries from raw photos dropped into
+// _originals/<category>/<event>/, e.g. _originals/cars/2026-porsche-cc-may/.
 // Usage: npm run build-galleries   (see scripts/README.md)
 
 const fs = require('fs');
@@ -18,6 +19,14 @@ const THUMB_QUALITY = 75;
 
 const IMAGE_EXT = /\.(jpe?g|png)$/i;
 
+function listDirs(dir) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .sort();
+}
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -31,6 +40,13 @@ function prettify(slug) {
   // kept as-is so words like "on"/"the" aren't awkwardly capitalized.
   if (/[A-Z]/.test(slug)) return spaced;
   return spaced.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function sortByDateThenTitle(a, b) {
+  if (a.date && b.date) return b.date.localeCompare(a.date);
+  if (a.date) return -1;
+  if (b.date) return 1;
+  return a.title.localeCompare(b.title);
 }
 
 function formatDevice(make, model) {
@@ -119,9 +135,9 @@ async function readExifSummary(srcPath) {
   return hasAnyValue ? summary : null;
 }
 
-async function processGallery(slug) {
-  const srcDir = path.join(ORIGINALS_DIR, slug);
-  const outDir = path.join(GALLERIES_DIR, slug);
+async function processEvent(categorySlug, eventSlug) {
+  const srcDir = path.join(ORIGINALS_DIR, categorySlug, eventSlug);
+  const outDir = path.join(GALLERIES_DIR, categorySlug, eventSlug);
   const fullDir = path.join(outDir, 'full');
   const thumbDir = path.join(outDir, 'thumbs');
   fs.mkdirSync(fullDir, { recursive: true });
@@ -159,7 +175,7 @@ async function processGallery(slug) {
   fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
   const metaPath = path.join(outDir, 'gallery.json');
-  let galleryMeta = { title: prettify(slug), date: '' };
+  let galleryMeta = { title: prettify(eventSlug), date: '' };
   if (fs.existsSync(metaPath)) {
     try {
       galleryMeta = { ...galleryMeta, ...JSON.parse(fs.readFileSync(metaPath, 'utf8')) };
@@ -170,8 +186,8 @@ async function processGallery(slug) {
   fs.writeFileSync(metaPath, JSON.stringify(galleryMeta, null, 2));
 }
 
-function readGallery(slug) {
-  const outDir = path.join(GALLERIES_DIR, slug);
+function readEvent(categorySlug, eventSlug) {
+  const outDir = path.join(GALLERIES_DIR, categorySlug, eventSlug);
   const manifestPath = path.join(outDir, 'manifest.json');
   const metaPath = path.join(outDir, 'gallery.json');
   if (!fs.existsSync(manifestPath) || !fs.existsSync(metaPath)) return null;
@@ -180,7 +196,7 @@ function readGallery(slug) {
   const galleryMeta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
 
   return {
-    slug,
+    slug: eventSlug,
     title: galleryMeta.title,
     date: galleryMeta.date,
     count: manifest.length,
@@ -189,13 +205,27 @@ function readGallery(slug) {
   };
 }
 
-function renderGalleryPage(gallery, manifest) {
-  const items = manifest.map((img, i) => `
-    <button class="gallery-item" data-full="full/${img.file}" aria-label="Open photo ${i + 1} of ${manifest.length}">
-      <img src="thumbs/${img.file}" width="${img.width}" height="${img.height}" loading="lazy" alt="${escapeHtml(gallery.title)} photo ${i + 1}">
+function readOrCreateCategoryMeta(categorySlug) {
+  const metaPath = path.join(GALLERIES_DIR, categorySlug, 'category.json');
+  let categoryMeta = { title: prettify(categorySlug) };
+  if (fs.existsSync(metaPath)) {
+    try {
+      categoryMeta = { ...categoryMeta, ...JSON.parse(fs.readFileSync(metaPath, 'utf8')) };
+    } catch (e) {
+      console.warn(`  warning: could not parse existing ${metaPath}, using defaults`);
+    }
+  }
+  fs.writeFileSync(metaPath, JSON.stringify(categoryMeta, null, 2));
+  return categoryMeta;
+}
+
+function renderEventPage(category, event) {
+  const items = event.manifest.map((img, i) => `
+    <button class="gallery-item" data-full="full/${img.file}" aria-label="Open photo ${i + 1} of ${event.manifest.length}">
+      <img src="thumbs/${img.file}" width="${img.width}" height="${img.height}" loading="lazy" alt="${escapeHtml(event.title)} photo ${i + 1}">
     </button>`).join('\n');
 
-  const exifData = manifest.map((img) => img.exif || null);
+  const exifData = event.manifest.map((img) => img.exif || null);
   const exifJson = JSON.stringify(exifData).replace(/</g, '\\u003c');
 
   return `<!doctype html>
@@ -203,16 +233,20 @@ function renderGalleryPage(gallery, manifest) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escapeHtml(gallery.title)} — Riley Marcoux Photo</title>
-<meta name="description" content="Photo gallery: ${escapeHtml(gallery.title)}">
-<link rel="icon" href="../../favicon.ico">
-<link rel="stylesheet" href="../../assets/gallery/gallery.css">
+<title>${escapeHtml(event.title)} — ${escapeHtml(category.title)} — Riley Marcoux Photo</title>
+<meta name="description" content="Photo gallery: ${escapeHtml(event.title)}">
+<link rel="icon" href="../../../favicon.ico">
+<link rel="stylesheet" href="../../../assets/gallery/gallery.css">
 </head>
 <body class="gallery-page">
 <header class="gallery-header">
-  <a href="../" class="back-link">&larr; All Galleries</a>
-  <h1>${escapeHtml(gallery.title)}</h1>
-  ${gallery.date ? `<p class="gallery-date">${escapeHtml(gallery.date)}</p>` : ''}
+  <div class="gallery-breadcrumb">
+    <a href="../../">All Galleries</a>
+    <span class="gallery-breadcrumb-sep">/</span>
+    <a href="../">${escapeHtml(category.title)}</a>
+  </div>
+  <h1>${escapeHtml(event.title)}</h1>
+  ${event.date ? `<p class="gallery-date">${escapeHtml(event.date)}</p>` : ''}
 </header>
 <main class="gallery-grid">
 ${items}
@@ -231,27 +265,67 @@ ${items}
     <div class="lightbox-counter" id="lightbox-counter"></div>
   </div>
 </div>
-<script src="../../assets/gallery/gallery.js" defer></script>
+<script src="../../../assets/gallery/gallery.js" defer></script>
 </body>
 </html>
 `;
 }
 
-function renderIndexPage(galleries) {
-  const cards = galleries.map((g) => `
-      <a class="gallery-card" href="./${g.slug}/">
+function renderCardGrid(cards) {
+  return cards.length
+    ? `<div class="gallery-list-grid">${cards.join('\n')}</div>`
+    : `<p class="gallery-empty">No galleries yet — check back soon.</p>`;
+}
+
+function renderCategoryPage(category) {
+  const cards = category.events.map((event) => `
+      <a class="gallery-card" href="./${event.slug}/">
         <div class="gallery-card-image">
-          ${g.cover ? `<img src="./${g.slug}/thumbs/${g.cover}" loading="lazy" alt="${escapeHtml(g.title)}">` : ''}
+          ${event.cover ? `<img src="./${event.slug}/thumbs/${event.cover}" loading="lazy" alt="${escapeHtml(event.title)}">` : ''}
         </div>
         <div class="gallery-card-body">
-          <p class="gallery-card-title">${escapeHtml(g.title)}</p>
-          <p class="gallery-card-meta">${g.date ? `${escapeHtml(g.date)} · ` : ''}${g.count} photo${g.count === 1 ? '' : 's'}</p>
+          <p class="gallery-card-title">${escapeHtml(event.title)}</p>
+          <p class="gallery-card-meta">${event.date ? `${escapeHtml(event.date)} · ` : ''}${event.count} photo${event.count === 1 ? '' : 's'}</p>
         </div>
-      </a>`).join('\n');
+      </a>`);
 
-  const body = galleries.length
-    ? `<div class="gallery-list-grid">${cards}</div>`
-    : `<p class="gallery-empty">No galleries yet — check back soon.</p>`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(category.title)} — Riley Marcoux Photo</title>
+<meta name="description" content="Photo galleries: ${escapeHtml(category.title)}">
+<link rel="icon" href="../../favicon.ico">
+<link rel="stylesheet" href="../../assets/gallery/gallery.css">
+</head>
+<body class="gallery-page">
+<header class="gallery-header">
+  <a href="../" class="back-link">&larr; All Galleries</a>
+  <h1>${escapeHtml(category.title)}</h1>
+</header>
+<main>
+${renderCardGrid(cards)}
+</main>
+</body>
+</html>
+`;
+}
+
+function renderTopIndexPage(categories) {
+  const cards = categories.map((category) => {
+    const cover = category.events[0];
+    return `
+      <a class="gallery-card" href="./${category.slug}/">
+        <div class="gallery-card-image">
+          ${cover && cover.cover ? `<img src="./${category.slug}/${cover.slug}/thumbs/${cover.cover}" loading="lazy" alt="${escapeHtml(category.title)}">` : ''}
+        </div>
+        <div class="gallery-card-body">
+          <p class="gallery-card-title">${escapeHtml(category.title)}</p>
+          <p class="gallery-card-meta">${category.events.length} galler${category.events.length === 1 ? 'y' : 'ies'}</p>
+        </div>
+      </a>`;
+  });
 
   return `<!doctype html>
 <html lang="en">
@@ -269,7 +343,7 @@ function renderIndexPage(galleries) {
   <h1>Photo Galleries</h1>
 </header>
 <main>
-${body}
+${renderCardGrid(cards)}
 </main>
 </body>
 </html>
@@ -281,54 +355,64 @@ async function main() {
 
   let hadErrors = false;
 
-  if (fs.existsSync(ORIGINALS_DIR)) {
-    const slugs = fs.readdirSync(ORIGINALS_DIR, { withFileTypes: true })
-      .filter((d) => d.isDirectory())
-      .map((d) => d.name)
-      .sort();
+  for (const categorySlug of listDirs(ORIGINALS_DIR)) {
+    const eventSlugs = listDirs(path.join(ORIGINALS_DIR, categorySlug));
 
-    for (const slug of slugs) {
-      console.log(`Building gallery: ${slug}`);
+    for (const eventSlug of eventSlugs) {
+      console.log(`Building gallery: ${categorySlug} / ${eventSlug}`);
       try {
-        await processGallery(slug);
+        await processEvent(categorySlug, eventSlug);
         // Originals are expected to be backed up elsewhere (e.g. a NAS) before
-        // running this script — once a gallery builds successfully, its source
+        // running this script — once an event builds successfully, its source
         // photos are deleted here so they never get committed to git.
-        fs.rmSync(path.join(ORIGINALS_DIR, slug), { recursive: true, force: true });
+        fs.rmSync(path.join(ORIGINALS_DIR, categorySlug, eventSlug), { recursive: true, force: true });
         console.log('  done, removed local originals (make sure they are backed up elsewhere)');
       } catch (err) {
         hadErrors = true;
-        console.error(`  failed to build "${slug}", leaving its originals in place:`, err.message);
+        console.error(`  failed to build "${categorySlug}/${eventSlug}", leaving its originals in place:`, err.message);
       }
+    }
+
+    // Tidy up a category folder in _originals/ once every event inside it is built.
+    const categoryDir = path.join(ORIGINALS_DIR, categorySlug);
+    if (fs.existsSync(categoryDir) && fs.readdirSync(categoryDir).length === 0) {
+      fs.rmSync(categoryDir, { recursive: true, force: true });
     }
   }
 
-  // galleries/ is the durable source of truth once originals are deleted, so the
-  // listing page and every gallery page are always regenerated from what's on disk
-  // there rather than from what was just (re)built above.
-  const gallerySlugs = fs.readdirSync(GALLERIES_DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-    .sort();
+  // galleries/ is the durable source of truth once originals are deleted, so
+  // every page is always regenerated from what's on disk there rather than
+  // from what was just (re)built above.
+  const categories = [];
+  for (const categorySlug of listDirs(GALLERIES_DIR)) {
+    const events = listDirs(path.join(GALLERIES_DIR, categorySlug))
+      .map((eventSlug) => readEvent(categorySlug, eventSlug))
+      .filter(Boolean);
 
-  const galleries = gallerySlugs
-    .map((slug) => readGallery(slug))
-    .filter(Boolean);
+    if (events.length === 0) continue; // empty or malformed category folder, skip
 
-  galleries.sort((a, b) => {
-    if (a.date && b.date) return b.date.localeCompare(a.date);
-    if (a.date) return -1;
-    if (b.date) return 1;
-    return a.title.localeCompare(b.title);
-  });
+    events.sort(sortByDateThenTitle);
 
-  for (const gallery of galleries) {
-    fs.writeFileSync(path.join(GALLERIES_DIR, gallery.slug, 'index.html'), renderGalleryPage(gallery, gallery.manifest));
+    const categoryMeta = readOrCreateCategoryMeta(categorySlug);
+    categories.push({ slug: categorySlug, title: categoryMeta.title, events });
   }
 
-  fs.writeFileSync(path.join(GALLERIES_DIR, 'index.html'), renderIndexPage(galleries));
+  categories.sort((a, b) => a.title.localeCompare(b.title));
 
-  console.log(`Done. ${galleries.length} gallery(ies) published.`);
+  for (const category of categories) {
+    for (const event of category.events) {
+      fs.writeFileSync(
+        path.join(GALLERIES_DIR, category.slug, event.slug, 'index.html'),
+        renderEventPage(category, event),
+      );
+    }
+    fs.writeFileSync(path.join(GALLERIES_DIR, category.slug, 'index.html'), renderCategoryPage(category));
+  }
+
+  fs.writeFileSync(path.join(GALLERIES_DIR, 'index.html'), renderTopIndexPage(categories));
+
+  const eventCount = categories.reduce((n, c) => n + c.events.length, 0);
+  console.log(`Done. ${categories.length} categor${categories.length === 1 ? 'y' : 'ies'}, ${eventCount} gallery(ies) published.`);
 
   if (hadErrors) process.exitCode = 1;
 }

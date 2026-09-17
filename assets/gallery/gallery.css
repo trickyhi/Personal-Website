@@ -27,6 +27,24 @@
   color: var(--gallery-fg);
 }
 
+.gallery-breadcrumb {
+  font-size: 14px;
+}
+
+.gallery-breadcrumb a {
+  color: var(--gallery-muted);
+  text-decoration: none;
+}
+
+.gallery-breadcrumb a:hover {
+  color: var(--gallery-fg);
+}
+
+.gallery-breadcrumb-sep {
+  color: var(--gallery-muted);
+  margin: 0 6px;
+}
+
 .gallery-header h1 {
   margin: 12px 0 4px;
   font-size: 28px;

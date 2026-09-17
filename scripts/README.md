@@ -1,7 +1,8 @@
 # Photo gallery build script
 
 This turns full-resolution photos into compressed, web-ready galleries at
-`https://rmarcoux.com/galleries/`.
+`https://rmarcoux.com/galleries/`, organized as categories (e.g. "Cars",
+"Airshows") each containing individual event galleries.
 
 ## One-time setup
 
@@ -18,52 +19,58 @@ This turns full-resolution photos into compressed, web-ready galleries at
    (e.g. your NAS) — the build script deletes them from this repo once it's done
    with them (see step 3).
 
-2. Create a folder under `_originals/` named after the gallery, using lowercase
-   words separated by dashes — this becomes the URL slug:
+2. Under `_originals/`, create a category folder (or reuse an existing one, e.g.
+   `Cars`), and inside it an event folder named after this specific shoot:
 
    ```
-   _originals/2026-porsche-cc-may/
+   _originals/Cars/2026-porsche-cc-may/
    ```
 
-   Copy your exported JPEGs (or PNGs) into that folder.
+   Copy your exported JPEGs (or PNGs) into that event folder. A category can
+   hold as many events as you like — it's just a way of grouping related
+   galleries together on the site (`/galleries/cars/` lists every event in it).
 
-3. Run the build script from the repo root:
+3. Run the build script from the repo root — either:
 
    ```bash
    npm run build-galleries
    ```
 
-   This, for every gallery folder under `_originals/`:
+   or double-click `REGENERATE GALLERIES.bat` in the repo root.
+
+   This, for every event folder found under `_originals/<category>/`:
    - resizes and compresses each photo to WebP (a full-size version capped at
      2000px on the long edge, plus a small thumbnail for the grid), writing them
-     to `galleries/<slug>/full/` and `galleries/<slug>/thumbs/`
+     to `galleries/<category>/<event>/full/` and `.../thumbs/`
    - reads camera/shot info (model, focal length, aperture, shutter speed, ISO,
      exposure compensation, flash) from each photo's EXIF data and saves it to
-     `galleries/<slug>/manifest.json`, so it can be shown in the on-site lightbox
-   - **deletes the `_originals/<slug>/` folder** once that gallery has built
-     successfully — this repo is not where your originals live long-term
+     that event's `manifest.json`, so it can be shown in the on-site lightbox
+   - **deletes the `_originals/<category>/<event>/` folder** once that event has
+     built successfully (and the category folder too, once every event inside it
+     is built) — this repo is not where your originals live long-term
 
-   It then (re)generates every gallery's `index.html` plus the top-level
-   `galleries/index.html` listing page, from whatever is currently in `galleries/`
-   (not just what was built this run).
+   It then (re)generates every event page, every category page, and the
+   top-level `galleries/index.html` listing, from whatever is currently in
+   `galleries/` (not just what was built this run).
 
-4. (Optional) Open `galleries/<slug>/gallery.json` and set a nicer `title` and a
-   `date` (e.g. `"2026-05-01"`) — galleries are sorted newest-first by this date.
-   Re-run `npm run build-galleries` afterward to regenerate the pages with your
-   change (the script preserves your edits, and doesn't need `_originals/<slug>/`
-   to still exist to do this).
+4. (Optional) Open `galleries/<category>/<event>/gallery.json` and set a nicer
+   `title` and a `date` (e.g. `"2026-05-01"`) — events within a category are
+   sorted newest-first by this date. There's also `galleries/<category>/category.json`
+   for the category's display `title`. Re-run the build script afterward to
+   regenerate the pages with your change (it preserves your edits, and doesn't
+   need `_originals/` to still exist to do this).
 
-5. Commit `galleries/<slug>/` and push. `_originals/` is gitignored, so nothing
-   from there ever gets committed.
+5. Commit `galleries/<category>/` and push. `_originals/` is gitignored, so
+   nothing from there ever gets committed.
 
-## Removing a gallery
+## Removing a gallery or category
 
-Delete its folder under `galleries/`, then run `npm run build-galleries` again to
-regenerate the listing page without it.
+Delete the event's folder (or a whole category's folder) under `galleries/`,
+then run the build script again to regenerate the listing pages without it.
 
 ## Notes
 
-- If a gallery fails to build (e.g. a corrupt file), its `_originals/<slug>/`
+- If an event fails to build (e.g. a corrupt file), its `_originals/<category>/<event>/`
   folder is left in place rather than deleted, so you can fix the problem and
   rerun without losing anything.
 - `_originals/` is excluded from both git and the published site (Jekyll ignores
