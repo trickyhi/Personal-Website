@@ -1,0 +1,13 @@
+{
+  "name": "trickyhi-github-io",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build tooling for rmarcoux.com (photo gallery compression)",
+  "scripts": {
+    "build-galleries": "node scripts/build-galleries.js"
+  },
+  "devDependencies": {
+    "exifr": "^7.1.3",
+    "sharp": "^0.35.4"
+  }
+}

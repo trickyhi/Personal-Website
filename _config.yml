@@ -22,9 +22,10 @@ social_urls:
   facebook: "https://www.facebook.com/marcouxphotography"
   flickr: "https://www.flickr.com/photos/197429934@N07"
 
-# Gallery Collections
-collections:
-  galleries:
-    output: true
-    path: _galleries
-    permalink: /gallery/:name/
+# Keep build tooling out of the published site (source photos in _originals/
+# are already excluded automatically since Jekyll ignores "_"-prefixed folders)
+exclude:
+  - scripts
+  - package.json
+  - package-lock.json
+  - node_modules

@@ -66,8 +66,14 @@ coverage
 build/Release
 
 # Dependency directories
-node_modules
+node_modules/
 jspm_packages
+
+# Photo gallery originals — a transient staging area only. The build script
+# deletes each gallery's originals once it's compressed into galleries/, and
+# full-res backups live on the NAS, not in git.
+/_originals/*
+!/_originals/README.md
 
 # Optional npm cache directory
 .npm
