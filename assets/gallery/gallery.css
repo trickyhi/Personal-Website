@@ -108,8 +108,35 @@
 .lightbox-image {
   max-width: 92vw;
   max-height: 80vh;
+  display: block;
   object-fit: contain;
   box-shadow: 0 10px 40px rgba(0, 0, 0, .6);
+}
+
+.lightbox-frame {
+  position: relative;
+  display: inline-flex;
+  max-width: 92vw;
+  max-height: 80vh;
+}
+
+.lightbox-overlay {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+  background: rgba(0, 0, 0, .55);
+  border-radius: 4px;
+  color: var(--gallery-fg);
+  font-size: 13px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+.lightbox-overlay[hidden] {
+  display: none;
 }
 
 .lightbox-close,

@@ -23,13 +23,35 @@
     }
   }
 
+  // Wrap the image so the shot-info overlay can sit on its bottom-left corner.
+  const frame = document.createElement('div');
+  frame.className = 'lightbox-frame';
+  lightboxImage.parentNode.insertBefore(frame, lightboxImage);
+  frame.appendChild(lightboxImage);
+  const overlay = document.createElement('ul');
+  overlay.className = 'lightbox-overlay';
+  overlay.hidden = true;
+  frame.appendChild(overlay);
+
   let currentIndex = -1;
 
+  function renderOverlay(exif) {
+    overlay.innerHTML = '';
+    const lines = exif ? [exif.exposureTime, exif.aperture, exif.iso].filter(Boolean) : [];
+    lines.forEach((text) => {
+      const li = document.createElement('li');
+      li.textContent = text;
+      overlay.appendChild(li);
+    });
+    overlay.hidden = lines.length === 0;
+  }
+
   function renderInfo(index) {
-    if (!infoPanel) return;
     const exif = exifData[index];
+    renderOverlay(exif);
+    if (!infoPanel) return;
     const settings = exif
-      ? [exif.date, exif.focalLength, exif.aperture, exif.exposureTime, exif.iso, exif.exposureBias, exif.flash].filter(Boolean)
+      ? [exif.date, exif.focalLength, exif.exposureBias, exif.flash].filter(Boolean)
       : [];
 
     if (!exif || (!exif.device && settings.length === 0)) {
