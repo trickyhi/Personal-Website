@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EXIF Watermarker</title>
+<style>
+  :root { --bg:#111214; --panel:#1b1d21; --line:#2c2f35; --text:#e8e9ec; --muted:#8b909a; --accent:#f5a623; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif; }
+  header { padding:18px 20px; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:18px; }
+  header p { margin:2px 0 0; color:var(--muted); font-size:13px; }
+  main { display:grid; grid-template-columns: 320px 1fr; gap:20px; padding:20px; max-width:1200px; margin:0 auto; }
+  @media (max-width:800px){ main{ grid-template-columns:1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .panel h2 { margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .group { margin-bottom:18px; }
+  label { display:flex; align-items:center; gap:8px; margin:6px 0; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:8px 0; }
+  input[type=range] { width:150px; accent-color:var(--accent); }
+  input[type=text], select { width:100%; background:#0e0f11; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+  input[type=checkbox] { accent-color:var(--accent); }
+  input[type=color] { width:38px; height:28px; border:none; background:none; padding:0; }
+  .corners { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+  .corners button, .btn { background:#0e0f11; color:var(--text); border:1px solid var(--line); border-radius:6px; padding:8px; cursor:pointer; font:inherit; }
+  .corners button.on { border-color:var(--accent); color:var(--accent); }
+  .btn.primary { background:var(--accent); color:#111; border-color:var(--accent); font-weight:600; width:100%; padding:11px; }
+  .btn.primary:disabled { opacity:.4; cursor:not-allowed; }
+  #drop { border:2px dashed var(--line); border-radius:10px; min-height:360px; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--muted); cursor:pointer; position:relative; padding:10px; }
+  #drop.over { border-color:var(--accent); color:var(--accent); }
+  #canvas { max-width:100%; max-height:75vh; display:none; border-radius:4px; }
+  #meta { font-size:12px; color:var(--muted); margin-top:8px; word-break:break-word; }
+  [hidden] { display:none !important; }
+  .btn.small { padding:5px 10px; font-size:13px; }
+  #stripBar { display:flex; align-items:center; gap:8px; margin-top:12px; color:var(--muted); font-size:13px; }
+  #stripBar .spacer { flex:1; }
+  #strip { display:flex; gap:8px; overflow-x:auto; padding:8px 0 4px; }
+  .thumb { position:relative; flex:0 0 auto; height:70px; min-width:70px; max-width:120px; border:2px solid var(--line); border-radius:6px; overflow:hidden; cursor:pointer; background:#0e0f11; color:var(--muted); font-size:11px; display:flex; align-items:center; justify-content:center; }
+  .thumb canvas { height:100%; width:auto; display:block; }
+  .thumb.on { border-color:var(--accent); }
+  .thumb .x { position:absolute; top:2px; right:2px; width:20px; height:20px; line-height:16px; padding:0; border:none; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; cursor:pointer; opacity:0; }
+  .thumb:hover .x { opacity:1; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,34px); gap:4px; }
+  .grid3 button { height:28px; background:#0e0f11; border:1px solid var(--line); border-radius:5px; cursor:pointer; padding:0; position:relative; }
+  .grid3 button::after { content:''; position:absolute; width:8px; height:8px; border-radius:50%; background:var(--muted); top:50%; left:50%; transform:translate(-50%,-50%); }
+  .grid3 button.on { border-color:var(--accent); }
+  .grid3 button.on::after { background:var(--accent); }
+  .logo-name { font-size:12px; color:var(--muted); max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hint { font-size:12px; color:var(--muted); margin-top:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>EXIF Watermarker</h1>
+  <p>Stamp your camera settings on a photo for Instagram. Everything runs in your browser; nothing is uploaded.</p>
+</header>
+<main>
+  <div class="panel" id="controls">
+    <div class="group">
+      <h2>Show</h2>
+      <label><input type="checkbox" id="fCamera"> Camera model</label>
+      <label><input type="checkbox" id="fLens"> Lens</label>
+      <label><input type="checkbox" id="fFocal" checked> Focal length</label>
+      <label><input type="checkbox" id="fAperture" checked> Aperture</label>
+      <label><input type="checkbox" id="fShutter" checked> Shutter speed</label>
+      <label><input type="checkbox" id="fIso" checked> ISO</label>
+    </div>
+    <div class="group">
+      <h2>Text (editable)</h2>
+      <input type="text" id="line1" placeholder="Camera / lens line">
+      <div style="height:6px"></div>
+      <input type="text" id="line2" placeholder="Settings line">
+      <div class="hint">Edits apply to the selected photo only. Missing or wrong metadata? Fix it here.</div>
+      <button class="btn small" id="resetText" style="margin-top:6px">Reset text for this photo</button>
+    </div>
+    <div class="group">
+      <h2>Position</h2>
+      <div class="corners" id="corners">
+        <button data-c="tl">Top left</button>
+        <button data-c="tr">Top right</button>
+        <button data-c="bl">Bottom left</button>
+        <button data-c="br" class="on">Bottom right</button>
+      </div>
+    </div>
+    <div class="group">
+      <h2>Style</h2>
+      <div class="row"><span>Layout</span>
+        <select id="layout" style="width:150px">
+          <option value="inline">Inline</option>
+          <option value="stacked" selected>Stacked</option>
+          <option value="columns">Columns</option>
+        </select>
+      </div>
+      <div class="row"><span>Show labels</span><input type="checkbox" id="labels" checked></div>
+      <div class="row"><span>Size</span><input type="range" id="size" min="1.2" max="6" step="0.1" value="2.6"></div>
+      <div class="row"><span>Margin</span><input type="range" id="margin" min="0.5" max="8" step="0.1" value="3"></div>
+      <div class="row"><span>Text colour</span><input type="color" id="color" value="#ffffff"></div>
+      <div class="row"><span>Background pill</span><input type="checkbox" id="pill"></div>
+      <div class="row"><span>Pill opacity</span><input type="range" id="pillOp" min="0.1" max="1" step="0.05" value="0.45"></div>
+      <div class="row"><span>Drop shadow</span><input type="checkbox" id="shadow" checked></div>
+      <div class="row"><span>Shadow strength</span><input type="range" id="shadowAmt" min="0.2" max="1" step="0.05" value="0.75"></div>
+      <div class="row"><span>Font</span>
+        <select id="font" style="width:150px">
+          <option value="system-ui, sans-serif">Sans</option>
+          <option value="Georgia, serif">Serif</option>
+          <option value="'Courier New', monospace">Mono</option>
+        </select>
+      </div>
+    </div>
+    <div class="group">
+      <h2>Watermark (your brand)</h2>
+      <div class="row"><span>Type</span>
+        <select id="wmMode" style="width:150px">
+          <option value="off" selected>Off</option>
+          <option value="text">Text</option>
+          <option value="image">Logo image</option>
+        </select>
+      </div>
+      <div id="wmTextRows" hidden>
+        <input type="text" id="wmText" placeholder="e.g. © Your Name Photography" value="">
+        <div class="row"><span>Text colour</span><input type="color" id="wmColor" value="#ffffff"></div>
+      </div>
+      <div id="wmImageRows" hidden>
+        <div class="row"><button class="btn small" id="wmPick">Choose logo…</button><span class="logo-name" id="wmLogoName">No logo chosen</span></div>
+        <div class="row"><span>Logo colour</span>
+          <select id="wmTint" style="width:150px">
+            <option value="original" selected>Original</option>
+            <option value="white">Make white</option>
+            <option value="black">Make black</option>
+          </select>
+        </div>
+        <input type="file" id="wmFile" accept="image/*" hidden>
+      </div>
+      <div id="wmCommon" hidden>
+        <div class="row"><span>Size</span><input type="range" id="wmSize" min="5" max="80" step="1" value="15"></div>
+        <div class="row"><span>Opacity</span><input type="range" id="wmOpacity" min="0.05" max="1" step="0.05" value="0.7"></div>
+        <div class="row"><span>Drop shadow</span><input type="checkbox" id="wmShadow"></div>
+        <div class="row"><span>Position</span>
+          <div class="grid3" id="wmPos">
+            <button data-p="tl"></button><button data-p="tc"></button><button data-p="tr"></button>
+            <button data-p="ml"></button><button data-p="mc"></button><button data-p="mr"></button>
+            <button data-p="bl"></button><button data-p="bc" class="on"></button><button data-p="br"></button>
+          </div>
+        </div>
+        <div class="hint">Uses the same margin as the camera settings overlay.</div>
+      </div>
+    </div>
+    <div class="group">
+      <h2>Export</h2>
+      <div class="row"><span>Max long edge</span>
+        <select id="maxEdge" style="width:150px">
+          <option value="0">Original size</option>
+          <option value="2048">2048 px</option>
+          <option value="1350" selected>1350 px (Instagram)</option>
+        </select>
+      </div>
+      <div class="row"><span>Quality</span><input type="range" id="quality" min="0.6" max="1" step="0.01" value="0.92"></div>
+    </div>
+    <button class="btn primary" id="download" disabled>Download JPEG</button>
+    <button class="btn" id="downloadOne" style="width:100%;margin-top:8px" hidden>Download this photo only</button>
+  </div>
+
+  <div>
+    <div id="drop">
+      <div id="dropMsg">Drop photos here or click to choose<br><small>Select as many as you like. JPEG or HEIC with EXIF data works best</small></div>
+      <canvas id="canvas"></canvas>
+    </div>
+    <div id="stripBar" hidden>
+      <span id="count"></span>
+      <span class="spacer"></span>
+      <button class="btn small" id="addMore">+ Add photos</button>
+      <button class="btn small" id="clearAll">Clear all</button>
+    </div>
+    <div id="strip"></div>
+    <div id="meta"></div>
+    <input type="file" id="file" accept="image/*,.heic,.heif" multiple hidden>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/exifr@7/dist/lite.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const canvas = $('canvas');
+  let items = [], cur = -1, corner = 'br', renderTok = 0;
+  let wmImg = null, wmPos = 'bc'; const wmTinted = {};
+
+  function formatShutter(t) {
+    if (!t) return '';
+    if (t >= 1) return (Math.round(t * 10) / 10) + 's';
+    return '1/' + Math.round(1 / t) + 's';
+  }
+  function trimNum(n) { return String(Math.round(n * 10) / 10).replace(/\.0$/, ''); }
+
+  function textFor(exif) {
+    const camera = [];
+    if ($('fCamera').checked && exif.Model) {
+      let m = exif.Model;
+      if (exif.Make && !m.toLowerCase().startsWith(exif.Make.split(' ')[0].toLowerCase())) m = exif.Make.split(' ')[0] + ' ' + m;
+      camera.push(m);
+    }
+    if ($('fLens').checked && exif.LensModel) camera.push(exif.LensModel);
+    const s = [];
+    if ($('fFocal').checked && exif.FocalLength) s.push(trimNum(exif.FocalLength) + 'mm');
+    if ($('fAperture').checked && exif.FNumber) s.push('f/' + trimNum(exif.FNumber));
+    if ($('fShutter').checked && exif.ExposureTime) s.push(formatShutter(exif.ExposureTime));
+    if ($('fIso').checked && exif.ISO) s.push('ISO ' + exif.ISO);
+    return { line1: camera.join(' · '), line2: s.join('  ·  ') };
+  }
+
+  // regenerate text for every photo whose text the user hasn't hand-edited
+  function refreshText() {
+    items.forEach(it => { if (!it.edited) Object.assign(it, textFor(it.exif)); });
+    syncInputs();
+  }
+  function syncInputs() {
+    const it = items[cur];
+    $('line1').value = it ? it.line1 : '';
+    $('line2').value = it ? it.line2 : '';
+  }
+
+  function parseStats(s) {
+    return s.split(/\s*·\s*/).map(t => t.trim()).filter(Boolean).map(v => {
+      let label = '';
+      if (/mm$/i.test(v)) label = 'Focal';
+      else if (/^f\s*\//i.test(v)) label = 'Aperture';
+      else if (/^ISO/i.test(v)) { label = 'ISO'; v = v.replace(/^ISO\s*/i, ''); }
+      else if (/\d/.test(v) && /s$/i.test(v)) label = 'Shutter';
+      return { v, label: label.toUpperCase() };
+    });
+  }
+
+  // draw one photo + its watermark onto any canvas (preview or export)
+  function renderItem(item, img, cvs) {
+    const ctx = cvs.getContext('2d');
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const maxEdge = +$('maxEdge').value;
+    if (maxEdge && Math.max(w, h) > maxEdge) {
+      const k = maxEdge / Math.max(w, h);
+      w = Math.round(w * k); h = Math.round(h * k);
+    }
+    cvs.width = w; cvs.height = h;
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const camera = item.line1.trim().toUpperCase();
+    const stats = parseStats(item.line2);
+    if (!camera && !stats.length) { drawWatermark(ctx, w, h); return; }
+
+    const layout = $('layout').value;
+    const labels = $('labels').checked;
+    const short = Math.min(w, h);
+    const fs = short * (+$('size').value / 100);
+    const margin = short * (+$('margin').value / 100);
+    const font = $('font').value;
+    const fsCam = fs * 0.6, fsLab = fs * 0.5;
+    const gap = fs * 0.9;
+    const right = corner.includes('r'), bottom = corner.includes('b');
+
+    const setFont = (size, weight, spacing) => {
+      ctx.font = `${weight} ${size}px ${font}`;
+      if ('letterSpacing' in ctx) ctx.letterSpacing = (spacing || 0) * size + 'px';
+    };
+    const tw = (t, size, weight, spacing) => { setFont(size, weight, spacing); return ctx.measureText(t).width; };
+
+    // measure
+    const camW = camera ? tw(camera, fsCam, 600, 0.14) : 0;
+    const camH = camera ? fsCam * 1.2 : 0;
+    const ruleH = camera && stats.length ? fs * 0.55 : 0;
+    let bodyW = 0, bodyH = 0, valW = 0, labW = 0, colW = [];
+    const labelsOn = labels && stats.some(s => s.label);
+
+    if (layout === 'inline') {
+      bodyW = stats.reduce((a, s) => a + tw(s.v, fs, 700, 0.02), 0) + gap * Math.max(0, stats.length - 1);
+      bodyH = fs * 1.15;
+    } else if (layout === 'stacked') {
+      valW = Math.max(0, ...stats.map(s => tw(s.v, fs, 700, 0.02)));
+      labW = labelsOn ? Math.max(0, ...stats.map(s => tw(s.label, fsLab, 600, 0.14))) : 0;
+      bodyW = valW + (labelsOn ? gap * 0.7 + labW : 0);
+      bodyH = stats.length * fs * 1.3 - fs * 0.15;
+    } else { // columns
+      colW = stats.map(s => Math.max(tw(s.v, fs, 700, 0.02), labelsOn ? tw(s.label, fsLab, 600, 0.14) : 0));
+      bodyW = colW.reduce((a, b) => a + b, 0) + gap * 1.2 * Math.max(0, stats.length - 1);
+      bodyH = fs * 1.1 + (labelsOn ? fsLab * 1.5 : 0);
+    }
+    const W = Math.max(camW, bodyW);
+    const H = camH + ruleH + bodyH;
+
+    const bx = right ? w - margin - W : margin;
+    const by = bottom ? h - margin - H : margin;
+    const pad = fs * 0.7;
+
+    if ($('pill').checked) {
+      ctx.save();
+      ctx.globalAlpha = +$('pillOp').value;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.roundRect(bx - pad, by - pad * 0.8, W + pad * 2, H + pad * 1.6, fs * 0.55);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    const color = $('color').value;
+    ctx.fillStyle = color; ctx.strokeStyle = color;
+    ctx.textBaseline = 'top';
+    if ($('shadow').checked) {
+      ctx.shadowColor = 'rgba(0,0,0,.6)';
+      ctx.shadowBlur = fs * 0.35;
+      ctx.shadowOffsetY = fs * 0.06;
+    }
+    const text = (t, x, y, size, weight, spacing, align, alpha) => {
+      setFont(size, weight, spacing);
+      ctx.textAlign = align; ctx.globalAlpha = alpha;
+      // letterSpacing adds trailing space; nudge right-aligned text back
+      const nudge = (align === 'right' && 'letterSpacing' in ctx) ? spacing * size : 0;
+      if ($('shadow').checked) {
+        const k = +$('shadowAmt').value;
+        // tight, dark edge shadow first, then a soft wide glow-shadow for separation
+        ctx.shadowColor = 'rgba(0,0,0,' + (0.9 * k) + ')';
+        ctx.shadowBlur = fs * 0.1; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = fs * 0.05;
+        ctx.fillText(t, x + nudge, y);
+        ctx.shadowColor = 'rgba(0,0,0,' + (0.7 * k) + ')';
+        ctx.shadowBlur = fs * 0.45; ctx.shadowOffsetY = fs * 0.1;
+      }
+      ctx.fillText(t, x + nudge, y);
+      ctx.globalAlpha = 1;
+    };
+
+    let y = by;
+    if (camera) {
+      text(camera, right ? bx + W : bx, y, fsCam, 600, 0.14, right ? 'right' : 'left', 0.8);
+      y += camH;
+    }
+    if (ruleH) {
+      ctx.globalAlpha = 0.35; ctx.lineWidth = Math.max(1, fs * 0.04);
+      ctx.beginPath();
+      ctx.moveTo(bx, y + ruleH / 2); ctx.lineTo(bx + W, y + ruleH / 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+      y += ruleH;
+    }
+    const x0 = right ? bx + W - bodyW : bx;   // block sits against the chosen edge
+
+    if (layout === 'inline') {
+      let x = x0;
+      stats.forEach((s, i) => {
+        text(s.v, x, y, fs, 700, 0.02, 'left', 1);
+        x += tw(s.v, fs, 700, 0.02);
+        if (i < stats.length - 1) {
+          ctx.globalAlpha = 0.45; ctx.lineWidth = Math.max(1, fs * 0.05);
+          ctx.beginPath(); ctx.moveTo(x + gap / 2, y + fs * 0.15); ctx.lineTo(x + gap / 2, y + fs * 0.95); ctx.stroke();
+          ctx.globalAlpha = 1;
+          x += gap;
+        }
+      });
+    } else if (layout === 'stacked') {
+      stats.forEach((s, i) => {
+        const ry = y + i * fs * 1.3;
+        text(s.v, x0, ry, fs, 700, 0.02, 'left', 1);
+        if (labelsOn && s.label) text(s.label, x0 + valW + gap * 0.7, ry + fs * 0.4, fsLab, 600, 0.14, 'left', 0.7);
+      });
+    } else {
+      let x = x0;
+      stats.forEach((s, i) => {
+        const cx = x + colW[i] / 2;
+        text(s.v, cx, y, fs, 700, 0.02, 'center', 1);
+        if (labelsOn && s.label) text(s.label, cx, y + fs * 1.1, fsLab, 600, 0.14, 'center', 0.7);
+        x += colW[i] + gap * 1.2;
+      });
+    }
+    ctx.shadowColor = 'transparent';
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+    drawWatermark(ctx, w, h);
+  }
+
+  // ---- brand watermark (text or logo) ----
+  function logoSource(tint) {
+    if (tint === 'original' || !wmImg) return wmImg;
+    const key = tint + ':' + wmImg.src.length;
+    if (wmTinted[key]) return wmTinted[key];
+    const c = document.createElement('canvas');
+    c.width = wmImg.naturalWidth; c.height = wmImg.naturalHeight;
+    const x = c.getContext('2d');
+    x.drawImage(wmImg, 0, 0);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = tint === 'white' ? '#fff' : '#000';
+    x.fillRect(0, 0, c.width, c.height);
+    return (wmTinted[key] = c);
+  }
+
+  function drawWatermark(ctx, w, h) {
+    const mode = $('wmMode').value;
+    if (mode === 'off') return;
+    const short = Math.min(w, h);
+    const margin = short * (+$('margin').value / 100);
+    const size = +$('wmSize').value;
+    let bw, bh, draw, shadowBase;
+
+    if (mode === 'text') {
+      const txt = $('wmText').value.trim();
+      if (!txt) return;
+      const fs = short * (size / 100) * 0.35;
+      ctx.save();
+      ctx.font = '600 ' + fs + 'px ' + $('font').value;
+      if ('letterSpacing' in ctx) ctx.letterSpacing = fs * 0.08 + 'px';
+      bw = ctx.measureText(txt).width; bh = fs * 1.15;
+      ctx.restore();
+      shadowBase = fs;
+      draw = (x, y) => {
+        ctx.font = '600 ' + fs + 'px ' + $('font').value;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = fs * 0.08 + 'px';
+        ctx.fillStyle = $('wmColor').value;
+        ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+        ctx.fillText(txt, x, y);
+      };
+    } else {
+      const src = logoSource($('wmTint').value);
+      if (!src) return;
+      const sw = src.naturalWidth || src.width, sh = src.naturalHeight || src.height;
+      bw = w * size / 100; bh = bw * sh / sw;
+      if (bh > h * 0.6) { bh = h * 0.6; bw = bh * sw / sh; }
+      shadowBase = bw * 0.15;
+      draw = (x, y) => ctx.drawImage(src, x, y, bw, bh);
+    }
+
+    const v = wmPos[0], hz = wmPos[1];
+    const x = hz === 'l' ? margin : hz === 'r' ? w - margin - bw : (w - bw) / 2;
+    const y = v === 't' ? margin : v === 'b' ? h - margin - bh : (h - bh) / 2;
+
+    ctx.save();
+    ctx.globalAlpha = +$('wmOpacity').value;
+    if ($('wmShadow').checked) {
+      ctx.shadowColor = 'rgba(0,0,0,.65)';
+      ctx.shadowBlur = shadowBase * 0.25;
+      ctx.shadowOffsetY = shadowBase * 0.05;
+    }
+    draw(x, y);
+    ctx.restore();
+  }
+
+  function saveWm() {
+    try {
+      localStorage.setItem('wm_settings', JSON.stringify({
+        mode: $('wmMode').value, text: $('wmText').value, color: $('wmColor').value, tint: $('wmTint').value,
+        size: $('wmSize').value, opacity: $('wmOpacity').value, shadow: $('wmShadow').checked, pos: wmPos }));
+    } catch (e) {}
+  }
+  function syncWmUi() {
+    const m = $('wmMode').value;
+    $('wmTextRows').hidden = m !== 'text';
+    $('wmImageRows').hidden = m !== 'image';
+    $('wmCommon').hidden = m === 'off';
+    [...$('wmPos').children].forEach(b => b.classList.toggle('on', b.dataset.p === wmPos));
+  }
+  function setLogo(dataUrl, name, persist) {
+    const im = new Image();
+    im.onload = () => {
+      wmImg = im;
+      $('wmLogoName').textContent = name || 'logo';
+      if (persist) { try { localStorage.setItem('wm_logo', JSON.stringify({ dataUrl, name })); } catch (e) {} }
+      render();
+    };
+    im.onerror = () => { $('wmLogoName').textContent = 'Could not read that image'; };
+    im.src = dataUrl;
+  }
+
+  function render() {
+    const it = items[cur];
+    if (it && it.img) renderItem(it, it.img, canvas);
+  }
+
+  function loadImg(file) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const im = new Image();
+      im.onload = () => { URL.revokeObjectURL(url); resolve(im); };
+      im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not decode ' + file.name + ' (HEIC may not be supported by this browser)')); };
+      im.src = url;
+    });
+  }
+
+  async function makeThumb(file) {
+    try {
+      const bmp = await createImageBitmap(file, { resizeWidth: 220, resizeQuality: 'low' });
+      const c = document.createElement('canvas');
+      c.width = bmp.width; c.height = bmp.height;
+      c.getContext('2d').drawImage(bmp, 0, 0);
+      bmp.close();
+      return c;
+    } catch (e) { return null; }
+  }
+
+  function metaMessage(it) {
+    const pos = items.length > 1 ? `Photo ${cur + 1} of ${items.length} · ` : '';
+    if (it.error) return pos + it.error;
+    if (it.parseError) return pos + 'Could not read metadata: ' + it.parseError + '. Type your settings in the text boxes.';
+    if (Object.keys(it.exif).length) return pos + 'Metadata found: ' + ([it.exif.Model, it.exif.LensModel].filter(Boolean).join(', ') || 'exposure settings');
+    return pos + 'No EXIF metadata found in this file (social apps and screenshots strip it). Type your settings in the text boxes.';
+  }
+
+  async function addFiles(fileList) {
+    const files = [...fileList].filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name));
+    if (!files.length) return;
+    const firstNew = items.length;
+    for (let i = 0; i < files.length; i++) {
+      $('meta').textContent = `Reading photo ${i + 1} of ${files.length}…`;
+      const file = files[i];
+      const it = { file, name: file.name.replace(/\.[^.]+$/, ''), exif: {}, parseError: '', error: '', line1: '', line2: '', edited: false, thumb: null, img: null };
+      try {
+        if (typeof exifr === 'undefined') throw new Error('EXIF library failed to load (check your internet connection)');
+        it.exif = (await exifr.parse(file, { tiff: true, exif: true })) || {};
+      } catch (e) { it.exif = {}; it.parseError = e.message || String(e); }
+      it.thumb = await makeThumb(file);
+      Object.assign(it, textFor(it.exif));
+      items.push(it);
+    }
+    $('file').value = '';
+    buildStrip();
+    select(firstNew);
+  }
+
+  async function select(i) {
+    if (i < 0 || i >= items.length) return;
+    cur = i;
+    const tok = ++renderTok, it = items[i];
+    syncInputs();
+    $('meta').textContent = metaMessage(it);
+    markStrip();
+    if (!it.img && !it.error) {
+      try { it.img = await loadImg(it.file); }
+      catch (e) { it.error = e.message; $('meta').textContent = metaMessage(it); }
+    }
+    if (tok !== renderTok) return;
+    // keep only the current photo decoded so big batches don't eat memory
+    items.forEach((o, j) => { if (j !== i) o.img = null; });
+    if (it.img) {
+      $('dropMsg').style.display = 'none';
+      canvas.style.display = 'block';
+      render();
+    }
+  }
+
+  function buildStrip() {
+    const strip = $('strip');
+    strip.innerHTML = '';
+    items.forEach((it, i) => {
+      const d = document.createElement('div');
+      d.className = 'thumb';
+      d.title = it.file.name;
+      if (it.thumb) d.appendChild(it.thumb); else d.textContent = it.file.name;
+      const x = document.createElement('button');
+      x.className = 'x'; x.textContent = '×'; x.title = 'Remove';
+      x.addEventListener('click', e => { e.stopPropagation(); removeItem(i); });
+      d.appendChild(x);
+      d.addEventListener('click', () => select(i));
+      strip.appendChild(d);
+    });
+    $('stripBar').hidden = !items.length;
+    $('count').textContent = items.length + (items.length === 1 ? ' photo' : ' photos');
+    $('download').disabled = !items.length;
+    $('download').textContent = items.length > 1 ? `Download all ${items.length} (ZIP)` : 'Download JPEG';
+    $('downloadOne').hidden = items.length < 2;
+    markStrip();
+  }
+  function markStrip() { [...$('strip').children].forEach((d, i) => d.classList.toggle('on', i === cur)); }
+
+  function removeItem(i) {
+    items.splice(i, 1);
+    if (!items.length) return clearAll();
+    if (i < cur) cur--;
+    buildStrip();
+    select(Math.min(cur, items.length - 1));
+  }
+  function clearAll() {
+    items = []; cur = -1; renderTok++;
+    canvas.style.display = 'none';
+    $('dropMsg').style.display = '';
+    $('meta').textContent = '';
+    syncInputs(); buildStrip();
+  }
+
+  // ---- export ----
+  async function exportBlob(it) {
+    const im = it.img || await loadImg(it.file);
+    const c = document.createElement('canvas');
+    renderItem(it, im, c);
+    return new Promise(res => c.toBlob(res, 'image/jpeg', +$('quality').value));
+  }
+  function save(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  async function downloadAll() {
+    if (items.length === 1) return downloadOne();
+    if (typeof JSZip === 'undefined') { $('meta').textContent = 'ZIP library failed to load (check your internet connection).'; return; }
+    const btn = $('download'), label = btn.textContent;
+    btn.disabled = true;
+    const zip = new JSZip(), used = {};
+    const failed = [];
+    for (let i = 0; i < items.length; i++) {
+      btn.textContent = `Processing ${i + 1} of ${items.length}…`;
+      try {
+        const blob = await exportBlob(items[i]);
+        let name = items[i].name + '-exif', n = used[name] = (used[name] || 0) + 1;
+        if (n > 1) name += '-' + n;
+        zip.file(name + '.jpg', blob);
+      } catch (e) { failed.push(items[i].file.name); }
+    }
+    btn.textContent = 'Zipping…';
+    const out = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+    save(out, 'exif-watermarked.zip');
+    btn.textContent = label; btn.disabled = false;
+    $('meta').textContent = failed.length ? 'Done, but these could not be processed: ' + failed.join(', ') : `Done: ${items.length - failed.length} photos exported.`;
+  }
+  async function downloadOne() {
+    const it = items[cur]; if (!it) return;
+    try { save(await exportBlob(it), it.name + '-exif.jpg'); }
+    catch (e) { $('meta').textContent = e.message; }
+  }
+
+  // ---- wiring ----
+  const drop = $('drop');
+  drop.addEventListener('click', e => { if (!items.length) $('file').click(); });
+  $('file').addEventListener('change', e => addFiles(e.target.files));
+  $('addMore').addEventListener('click', () => $('file').click());
+  $('clearAll').addEventListener('click', clearAll);
+  ['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+
+  ['fCamera','fLens','fFocal','fAperture','fShutter','fIso'].forEach(id => $(id).addEventListener('change', () => { refreshText(); render(); }));
+  ['layout','labels','size','margin','color','pill','pillOp','shadow','shadowAmt','font','maxEdge'].forEach(id => $(id).addEventListener('input', render));
+  ['line1','line2'].forEach(id => $(id).addEventListener('input', () => {
+    const it = items[cur]; if (!it) return;
+    it.line1 = $('line1').value; it.line2 = $('line2').value; it.edited = true;
+    render();
+  }));
+  $('resetText').addEventListener('click', () => {
+    const it = items[cur]; if (!it) return;
+    it.edited = false; Object.assign(it, textFor(it.exif)); syncInputs(); render();
+  });
+  ['wmMode','wmText','wmColor','wmTint','wmSize','wmOpacity','wmShadow'].forEach(id => $(id).addEventListener('input', () => { syncWmUi(); saveWm(); render(); }));
+  $('wmPos').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    wmPos = b.dataset.p; syncWmUi(); saveWm(); render();
+  });
+  $('wmPick').addEventListener('click', () => $('wmFile').click());
+  $('wmFile').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => setLogo(r.result, f.name, r.result.length < 1500000);
+    r.readAsDataURL(f);
+    e.target.value = '';
+  });
+  // restore saved watermark settings
+  try {
+    const saved = JSON.parse(localStorage.getItem('wm_settings') || 'null');
+    if (saved) {
+      $('wmMode').value = saved.mode; $('wmText').value = saved.text || ''; $('wmColor').value = saved.color; $('wmTint').value = saved.tint;
+      $('wmSize').value = saved.size; $('wmOpacity').value = saved.opacity; $('wmShadow').checked = !!saved.shadow; wmPos = saved.pos || 'bc';
+    }
+    const logo = JSON.parse(localStorage.getItem('wm_logo') || 'null');
+    if (logo) setLogo(logo.dataUrl, logo.name, false);
+  } catch (e) {}
+  syncWmUi();
+
+  $('corners').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    corner = b.dataset.c;
+    [...$('corners').children].forEach(x => x.classList.toggle('on', x === b));
+    render();
+  });
+  $('download').addEventListener('click', downloadAll);
+  $('downloadOne').addEventListener('click', downloadOne);
+})();
+</script>
+</body>
+</html>
