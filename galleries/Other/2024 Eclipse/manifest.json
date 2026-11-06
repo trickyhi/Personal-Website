@@ -12,18 +12,21 @@
       "iso": "ISO 100",
       "exposureBias": "EXP 0",
       "flash": "No flash, compulsory"
-    }
+    },
+    "lqip": "data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAACwAwCdASoUAA0APu1iqk2ppaQiMAgBMB2JaQAAW+uND7UXGxKECAD+9CTcmFWj74CG/B9vqBm0TERXvIlQGW1KwAA="
   },
   {
     "file": "Eclipse 2024 4x5.webp",
     "width": 2000,
     "height": 1600,
-    "exif": null
+    "exif": null,
+    "lqip": "data:image/webp;base64,UklGRp4AAABXRUJQVlA4WAoAAAAQAAAAEwAADwAAQUxQSBUAAAABD/D+/4iIICQgPPB/rW5BRP+TtwQAVlA4IGIAAADQAwCdASoUABAAPu1iqk2ppaQiMAgBMB2JZwAAW+uI9vDFAFJcPgAA/vQhOSy7N/XehL9LLZf5Cz/4s4V4WFSJ/+mVLaJaS0OVH1P5x590W26qOj7TIbGkRX0E68ey2aAAAA=="
   },
   {
     "file": "Eclipse 2024.webp",
     "width": 2000,
     "height": 1333,
-    "exif": null
+    "exif": null,
+    "lqip": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAACQAwCdASoUAA0APu1kqk4ppaQiMAgBMB2JZwAAW+n2H+CKzTQAAP70ITp2ATdicTRsVbdLzpjRYyV34ThUXXRV6PY/LvJtq5v4zLMZjT4/+LqVFTlwAA=="
   }
 ]

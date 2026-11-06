@@ -178,6 +178,33 @@ async function readExifSummary(srcPath) {
   return { summary: hasAnyValue ? summary : null, capturedAt };
 }
 
+// Tiny (~20px wide) inline preview shown while the real thumbnail loads ("blur-up").
+async function makeLqip(thumbPath) {
+  const buf = await sharp(thumbPath)
+    .resize({ width: 20 })
+    .webp({ quality: 40 })
+    .toBuffer();
+  return `data:image/webp;base64,${buf.toString('base64')}`;
+}
+
+// Fills in a missing "lqip" for every photo of an already-built gallery, so older
+// galleries get previews without needing their original photos again.
+async function ensureLqips(categorySlug, eventSlug) {
+  const outDir = path.join(GALLERIES_DIR, categorySlug, eventSlug);
+  const manifestPath = path.join(outDir, 'manifest.json');
+  if (!fs.existsSync(manifestPath)) return;
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  let changed = false;
+  for (const entry of manifest) {
+    if (entry.lqip) continue;
+    const thumbPath = path.join(outDir, 'thumbs', entry.file);
+    if (!fs.existsSync(thumbPath)) continue;
+    entry.lqip = await makeLqip(thumbPath);
+    changed = true;
+  }
+  if (changed) fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+}
+
 async function processEvent(categorySlug, eventSlug) {
   const srcDir = path.join(ORIGINALS_DIR, categorySlug, eventSlug);
   const outDir = path.join(GALLERIES_DIR, categorySlug, eventSlug);
@@ -211,7 +238,8 @@ async function processEvent(categorySlug, eventSlug) {
 
     const { width, height } = await sharp(fullPath).metadata();
     const { summary: exif, capturedAt } = await readExifSummary(srcPath);
-    manifest.push({ file: outName, width, height, exif });
+    const lqip = await makeLqip(thumbPath);
+    manifest.push({ file: outName, width, height, lqip, exif });
     if (capturedAt && (!earliestCapture || capturedAt < earliestCapture)) {
       earliestCapture = capturedAt;
     }
@@ -253,6 +281,7 @@ function readEvent(categorySlug, eventSlug) {
     date: galleryMeta.date,
     count: manifest.length,
     cover: manifest[0] ? manifest[0].file : null,
+    coverLqip: manifest[0] ? manifest[0].lqip || '' : '',
     manifest,
   };
 }
@@ -273,7 +302,7 @@ function readOrCreateCategoryMeta(categorySlug) {
 
 function renderEventPage(category, event) {
   const items = event.manifest.map((img, i) => `
-    <button class="gallery-item" data-full="full/${img.file}" aria-label="Open photo ${i + 1} of ${event.manifest.length}">
+    <button class="gallery-item" data-full="full/${img.file}" aria-label="Open photo ${i + 1} of ${event.manifest.length}" style="aspect-ratio:${img.width}/${img.height}${img.lqip ? `;background-image:url(${img.lqip})` : ''}">
       <img src="thumbs/${img.file}" width="${img.width}" height="${img.height}" loading="lazy" alt="${escapeHtml(event.title)} photo ${i + 1}">
     </button>`).join('\n');
 
@@ -332,7 +361,7 @@ function renderCardGrid(cards) {
 function renderCategoryPage(category) {
   const cards = category.events.map((event) => `
       <a class="gallery-card" href="./${event.slug}/">
-        <div class="gallery-card-image">
+        <div class="gallery-card-image"${event.coverLqip ? ` style="background-image:url(${event.coverLqip})"` : ''}>
           ${event.cover ? `<img src="./${event.slug}/thumbs/${event.cover}" loading="lazy" alt="${escapeHtml(event.title)}">` : ''}
         </div>
         <div class="gallery-card-body">
@@ -359,6 +388,7 @@ function renderCategoryPage(category) {
 <main>
 ${renderCardGrid(cards)}
 </main>
+<script src="../../assets/gallery/gallery.js" defer></script>
 </body>
 </html>
 `;
@@ -367,14 +397,16 @@ ${renderCardGrid(cards)}
 function renderTopIndexPage(categories) {
   const cards = categories.map((category) => {
     const cover = category.events[0];
+    const lqip = cover && cover.coverLqip ? ` style="background-image:url(${cover.coverLqip})"` : '';
     return `
-      <a class="gallery-card" href="./${category.slug}/">
-        <div class="gallery-card-image">
-          ${cover && cover.cover ? `<img src="./${category.slug}/${cover.slug}/thumbs/${cover.cover}" loading="lazy" alt="${escapeHtml(category.title)}">` : ''}
-        </div>
-        <div class="gallery-card-body">
-          <p class="gallery-card-title">${escapeHtml(category.title)}</p>
-          <p class="gallery-card-meta">${category.events.length} galler${category.events.length === 1 ? 'y' : 'ies'}</p>
+      <a class="gallery-hero" href="./${category.slug}/"${lqip}>
+        ${cover && cover.cover ? `<img src="./${category.slug}/${cover.slug}/thumbs/${cover.cover}" loading="lazy" alt="${escapeHtml(category.title)}">` : ''}
+        <div class="gallery-hero-body">
+          <div>
+            <p class="gallery-hero-title">${escapeHtml(category.title)}</p>
+            <p class="gallery-hero-meta">${category.events.length} galler${category.events.length === 1 ? 'y' : 'ies'}</p>
+          </div>
+          <span class="gallery-hero-arrow" aria-hidden="true">&rarr;</span>
         </div>
       </a>`;
   });
@@ -395,8 +427,9 @@ function renderTopIndexPage(categories) {
   <h1>Photo Galleries</h1>
 </header>
 <main>
-${renderCardGrid(cards)}
+${cards.length ? `<div class="gallery-hero-grid">${cards.join('\n')}</div>` : '<p class="gallery-empty">No galleries yet — check back soon.</p>'}
 </main>
+<script src="../assets/gallery/gallery.js" defer></script>
 </body>
 </html>
 `;
@@ -433,7 +466,11 @@ async function main() {
   // from what was just (re)built above.
   const categories = [];
   for (const categorySlug of listDirs(GALLERIES_DIR)) {
-    const events = listDirs(path.join(GALLERIES_DIR, categorySlug))
+    const eventSlugs = listDirs(path.join(GALLERIES_DIR, categorySlug));
+    for (const eventSlug of eventSlugs) {
+      await ensureLqips(categorySlug, eventSlug);
+    }
+    const events = eventSlugs
       .map((eventSlug) => readEvent(categorySlug, eventSlug))
       .filter(Boolean);
 

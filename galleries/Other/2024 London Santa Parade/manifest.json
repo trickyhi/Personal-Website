@@ -12,7 +12,8 @@
       "iso": "ISO 16000",
       "exposureBias": "EXP 0",
       "flash": "No flash, compulsory"
-    }
+    },
+    "lqip": "data:image/webp;base64,UklGRtwAAABXRUJQVlA4INAAAAAQBgCdASoUAB4APu1oqk8ppiOiMBgIATAdiWoAsR8v7120YSfr5RdpicPOldgSGkVpOF698hb4NAAA/ujN8QlyWgFfP95td9Exs3ZpS8WHQ7qzNKHBSjF6cffoqezMmJckIhAgSDwSzcKd21qI01L+tftwptrT5qSJAihfrsHDSc5BGcjCUOlYA2JmecGXzAYKKkHHyhx9+vyVNK590x5swhQbEPDrYE9AsgPSP6UlQavlE7z+3cVNByNL0kIC8F+0MuDU7+5feyjLe2DqAAAA"
   },
   {
     "file": "DSC06938-Enhanced-NR.webp",
@@ -27,6 +28,7 @@
       "iso": "ISO 20000",
       "exposureBias": "EXP 0",
       "flash": "No flash, compulsory"
-    }
+    },
+    "lqip": "data:image/webp;base64,UklGRtgAAABXRUJQVlA4IMwAAACQBQCdASoUAB4APu1oq08ppiOiMBgIATAdiWgAsR7fAUSkozT2uROgxRV8TZdaCIpvaeH4cAD+Jt1HSQ1Vj1m1foJ8bjR5Af17zTHjhb37XY4f5cN7w8c726ZtUFc8rseAmBOjZZP5ekkzmk0iSQdagDMJCsoQ8DTQuWmGQYii+XyrYJP2HlGLja0OqM1u6gyOc1cxAm7kFZr+onkKKiWGzLMFmIQ5OqJEQoVprnBtQ6yRTzt47JoEfbEoiB3L+WVC7tnXXO6JgSQYAAA="
   }
 ]
